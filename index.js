@@ -523,6 +523,20 @@ function supportMessage(settings) {
   return '请先在后台“系统设置 -> 客服 Telegram”填写你的 Telegram 用户名，例如 @username。';
 }
 
+function mainMenuReplyMarkup(settings) {
+  const rows = [
+    [{ text: '商品购买', callback_data: 'show_products' }]
+  ];
+  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  if (supportTelegram) {
+    rows.push([{ text: '联系客服', url: supportTelegram }]);
+  } else {
+    rows.push([{ text: '联系客服', callback_data: 'support' }]);
+  }
+
+  return { inline_keyboard: rows };
+}
+
 function productConfirmKeyboard(product, settings) {
   const rows = [[{ text: '确认下单', callback_data: `confirm_buy:${product.id}` }]];
   const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
@@ -599,11 +613,19 @@ function startBot() {
       reply_markup: {
         keyboard: [
           ['商品购买'],
-          ['今日价格'],
           ['联系客服']
         ],
         resize_keyboard: true
       }
+    });
+  });
+
+  bot.onText(/\/start/, (msg) => {
+    const store = readStore();
+    bot.sendMessage(msg.chat.id, '请选择功能：', {
+      reply_markup: mainMenuReplyMarkup(store.settings)
+    }).catch((error) => {
+      console.error(`/start 内联菜单发送失败：${error.message}`);
     });
   });
 
@@ -622,7 +644,7 @@ function startBot() {
     if (!msg.text || msg.text.startsWith('/')) return;
 
     const store = readStore();
-    if (msg.text === '商品购买' || msg.text === '今日价格') {
+    if (msg.text === '商品购买') {
       const products = store.products.filter(isProductActive);
       console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter(isProductActive).length} 个，展示 ${products.length} 个。`);
       if (products.length === 0) {
@@ -649,6 +671,20 @@ function startBot() {
     }
 
     const store = readStore();
+    if (query.data === 'show_products') {
+      const products = store.products.filter(isProductActive);
+      console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter(isProductActive).length} 个，展示 ${products.length} 个。`);
+      if (products.length === 0) {
+        await bot.sendMessage(chatId, '当前暂无可售商品，请稍后再来。');
+        await bot.answerCallbackQuery(query.id);
+        return;
+      }
+
+      await sendProductSummary(bot, chatId, products, store.settings);
+      await bot.answerCallbackQuery(query.id);
+      return;
+    }
+
     if (query.data === 'support') {
       bot.sendMessage(chatId, supportMessage(store.settings), {
         reply_markup: supportReplyMarkup(store.settings)
