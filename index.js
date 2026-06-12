@@ -270,7 +270,15 @@ async function handleApi(req, res, pathname) {
       const body = await parseBody(req);
       const order = store.orders.find((item) => item.id === orderMatch[1]);
       if (!order) return jsonResponse(res, 404, { message: '订单不存在' });
-      order.status = body.status || order.status;
+      const nextStatus = body.status || order.status;
+      if (nextStatus === '已完成' && !order.stockDeducted) {
+        const product = store.products.find((item) => item.id === order.productId);
+        if (product) {
+          product.stock = Math.max(0, Number(product.stock || 0) - 1);
+          order.stockDeducted = true;
+        }
+      }
+      order.status = nextStatus;
       order.note = body.note || '';
       order.updatedAt = new Date().toISOString();
       writeStore(store);
@@ -536,7 +544,8 @@ function startBot() {
 
     const store = readStore();
     if (msg.text === '商品购买' || msg.text === '今日价格') {
-      const products = store.products.filter((item) => item.active && item.stock > 0);
+      const products = store.products.filter((item) => item.active);
+      console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter((item) => item.active).length} 个，展示 ${products.length} 个。`);
       if (products.length === 0) {
         bot.sendMessage(msg.chat.id, '当前暂无可售商品，请稍后再来。');
         return;
@@ -583,11 +592,11 @@ function startBot() {
         status: '待付款',
         paymentImageUrl: '',
         note: '',
+        stockDeducted: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
-      product.stock = Math.max(0, Number(product.stock || 0) - 1);
       store.orders.unshift(order);
       const user = store.users.find((item) => item.telegramId === chatId);
       if (user) user.purchaseHistory.unshift(order.id);
