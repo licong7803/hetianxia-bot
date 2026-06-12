@@ -509,11 +509,15 @@ function normalizeTelegramLink(value) {
   const atMatch = raw.match(/@([A-Za-z0-9_]{5,32})/);
   if (atMatch) return `https://t.me/${atMatch[1]}`;
   if (/^[A-Za-z0-9_]{5,32}$/.test(raw)) return `https://t.me/${raw}`;
-  return raw;
+  return '';
+}
+
+function getSupportTelegram(settings) {
+  return normalizeTelegramLink(settings.supportTelegram || '') || normalizeTelegramLink(settings.supportText || '');
 }
 
 function supportReplyMarkup(settings) {
-  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  const supportTelegram = getSupportTelegram(settings);
   if (!supportTelegram) return undefined;
   return {
     inline_keyboard: [[
@@ -523,7 +527,7 @@ function supportReplyMarkup(settings) {
 }
 
 function supportMessage(settings) {
-  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  const supportTelegram = getSupportTelegram(settings);
   if (supportTelegram) {
     return settings.supportText || '请点击下方按钮联系人工客服。';
   }
@@ -535,7 +539,7 @@ function mainMenuReplyMarkup(settings) {
   const rows = [
     [{ text: '商品购买', callback_data: 'show_products' }]
   ];
-  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  const supportTelegram = getSupportTelegram(settings);
   if (supportTelegram) {
     rows.push([{ text: '联系客服', url: supportTelegram }]);
   } else {
@@ -547,7 +551,7 @@ function mainMenuReplyMarkup(settings) {
 
 function productConfirmKeyboard(product, settings) {
   const rows = [[{ text: '确认下单', callback_data: `confirm_buy:${product.id}` }]];
-  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  const supportTelegram = getSupportTelegram(settings);
   if (supportTelegram) {
     rows.push([{ text: '联系客服', url: supportTelegram }]);
   }
@@ -560,7 +564,7 @@ function productSummaryKeyboard(products, settings) {
     callback_data: `detail:${product.id}`
   }]));
 
-  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  const supportTelegram = getSupportTelegram(settings);
   if (supportTelegram) {
     rows.push([{ text: '联系客服', url: supportTelegram }]);
   }
@@ -619,9 +623,20 @@ function startBot() {
 
     const store = readStore();
     bot.sendMessage(msg.chat.id, '欢迎使用盒天下！请选择功能：', {
+      reply_markup: {
+        keyboard: [
+          ['商品购买'],
+          ['联系客服']
+        ],
+        resize_keyboard: true
+      }
+    }).catch((error) => {
+      console.error(`/start 底部菜单发送失败：${error.message}`);
+    });
+    bot.sendMessage(msg.chat.id, '也可以点击下方按钮操作：', {
       reply_markup: mainMenuReplyMarkup(store.settings)
     }).catch((error) => {
-      console.error(`/start 菜单发送失败：${error.message}`);
+      console.error(`/start 内联菜单发送失败：${error.message}`);
     });
   });
 
@@ -640,7 +655,7 @@ function startBot() {
     if (!msg.text || msg.text.startsWith('/')) return;
 
     const store = readStore();
-    if (msg.text === '商品购买') {
+    if (msg.text === '商品购买' || msg.text === '购买商品') {
       const products = store.products.filter(isProductActive);
       console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter(isProductActive).length} 个，展示 ${products.length} 个。`);
       if (products.length === 0) {
