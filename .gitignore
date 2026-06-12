@@ -1,5 +1,6 @@
 node_modules/
 .env
 .bot.lock
+data/store.json
 uploads/*
 !uploads/.gitkeep

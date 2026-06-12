@@ -10,8 +10,7 @@ const LOCK_FILE = path.join(ROOT_DIR, '.bot.lock');
 
 loadEnvFile();
 
-const DATA_DIR = process.env.DATA_DIR || path.join(ROOT_DIR, 'data');
-const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(ROOT_DIR, 'uploads');
+const { DATA_DIR, UPLOADS_DIR } = resolveDataPaths();
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
 
 ensureFolders();
@@ -25,6 +24,17 @@ const TELEGRAM_PROXY = getTelegramProxy();
 const sessions = new Map();
 
 let bot = null;
+
+function resolveDataPaths() {
+  const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_NAME);
+  const defaultDataDir = isRailway ? '/data/data' : path.join(ROOT_DIR, 'data');
+  const defaultUploadsDir = isRailway ? '/data/uploads' : path.join(ROOT_DIR, 'uploads');
+
+  return {
+    DATA_DIR: process.env.DATA_DIR || defaultDataDir,
+    UPLOADS_DIR: process.env.UPLOADS_DIR || defaultUploadsDir
+  };
+}
 
 function loadEnvFile() {
   const envPath = path.join(ROOT_DIR, '.env');
@@ -48,6 +58,9 @@ function ensureFolders() {
   for (const folder of [DATA_DIR, PUBLIC_DIR, UPLOADS_DIR]) {
     if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
   }
+
+  console.log(`数据文件路径：${STORE_FILE}`);
+  console.log(`上传目录路径：${UPLOADS_DIR}`);
 
   if (!fs.existsSync(STORE_FILE)) {
     writeStore({
