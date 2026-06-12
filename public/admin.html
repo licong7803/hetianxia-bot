@@ -474,7 +474,7 @@
                 <label>店铺名称
                   <input id="settingStoreName">
                 </label>
-                <label>USDT 收款地址
+                <label>USDT 收款地址（可选）
                   <input id="settingUsdtAddress">
                 </label>
                 <label>客服 Telegram
@@ -482,6 +482,9 @@
                 </label>
                 <label class="full">客服说明
                   <textarea id="settingSupportText"></textarea>
+                </label>
+                <label class="full">USDT 收款码
+                  <input id="settingUsdtQrData" type="file" accept="image/*">
                 </label>
                 <label class="full">微信收款码
                   <input id="settingWechatQrData" type="file" accept="image/*">
@@ -802,6 +805,7 @@
       event.preventDefault();
       $('#settingsMessage').textContent = '';
       try {
+        const usdtQrData = await fileToDataUrl($('#settingUsdtQrData').files[0]);
         const wechatQrData = await fileToDataUrl($('#settingWechatQrData').files[0]);
         await api('/api/settings', {
           method: 'PUT',
@@ -810,6 +814,7 @@
             usdtAddress: $('#settingUsdtAddress').value,
             supportText: $('#settingSupportText').value,
             supportTelegram: $('#settingSupportTelegram').value,
+            usdtQrData,
             wechatQrData
           })
         });

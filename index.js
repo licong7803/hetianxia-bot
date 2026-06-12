@@ -60,6 +60,7 @@ function ensureFolders() {
         supportText: '请联系人工客服完成付款和发货。',
         supportTelegram: '',
         usdtAddress: '',
+        usdtQr: '',
         wechatQr: ''
       }
     });
@@ -363,6 +364,7 @@ async function handleApi(req, res, pathname) {
         supportText: String(body.supportText || ''),
         supportTelegram: normalizeTelegramLink(body.supportTelegram || ''),
         usdtAddress: String(body.usdtAddress || ''),
+        usdtQr: body.usdtQrData ? saveImageFromDataUrl(body.usdtQrData) : String(body.usdtQr || store.settings.usdtQr || ''),
         wechatQr: body.wechatQrData ? saveImageFromDataUrl(body.wechatQrData) : String(body.wechatQr || store.settings.wechatQr || '')
       };
       writeStore(store);
@@ -709,8 +711,6 @@ function startBot() {
         `商品：${product.name}`,
         `价格：${product.price} USDT`,
         '',
-        store.settings.usdtAddress ? `USDT 地址：${store.settings.usdtAddress}` : 'USDT 地址：请联系人工客服获取。',
-        '',
         '付款后请把付款截图发给客服'
       ].filter(Boolean);
 
@@ -724,6 +724,15 @@ function startBot() {
         }
       }
       bot.sendMessage(chatId, payLines.join('\n'));
+      if (store.settings.usdtQr) {
+        try {
+          await bot.sendPhoto(chatId, getUploadedFilePath(store.settings.usdtQr), {
+            caption: 'USDT 收款码'
+          });
+        } catch (error) {
+          console.error(`发送 USDT 收款码失败：${error.message}`);
+        }
+      }
       if (store.settings.wechatQr) {
         try {
           await bot.sendPhoto(chatId, getUploadedFilePath(store.settings.wechatQr), {
