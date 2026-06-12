@@ -38,7 +38,7 @@ function readJson(file, fallback) {
   }
 
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   } catch (error) {
     const backupFile = `${file}.broken-${Date.now()}`;
     fs.copyFileSync(file, backupFile);
@@ -59,9 +59,39 @@ function normalizeSettings(settings = {}) {
   };
 }
 
+function isFilled(value) {
+  return value !== undefined && value !== null && String(value).trim() !== '';
+}
+
+function chooseNewerSettings(fileSettings, fallbackSettings) {
+  const fileTime = Date.parse(fileSettings.updatedAt || '') || 0;
+  const fallbackTime = Date.parse(fallbackSettings.updatedAt || '') || 0;
+
+  if (fallbackTime > fileTime) {
+    return {
+      ...fileSettings,
+      ...fallbackSettings,
+    };
+  }
+
+  const merged = {
+    ...fallbackSettings,
+    ...fileSettings,
+  };
+
+  for (const key of Object.keys(DEFAULT_SETTINGS)) {
+    if (!isFilled(merged[key]) && isFilled(fallbackSettings[key])) {
+      merged[key] = fallbackSettings[key];
+    }
+  }
+
+  return merged;
+}
+
 function readSettings(fallback = {}) {
-  const settings = readJson(SETTINGS_FILE, normalizeSettings(fallback));
-  return normalizeSettings(settings);
+  const fallbackSettings = normalizeSettings(fallback);
+  const fileSettings = normalizeSettings(readJson(SETTINGS_FILE, fallbackSettings));
+  return normalizeSettings(chooseNewerSettings(fileSettings, fallbackSettings));
 }
 
 function writeSettings(settings) {

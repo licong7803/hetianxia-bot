@@ -399,6 +399,7 @@ async function handleApi(req, res, pathname, getBot) {
         : body.wechatQr && body.wechatQr.startsWith('data:')
           ? saveImageFromDataUrl(body.wechatQr)
           : current.wechatQr,
+      updatedAt: nowIso(),
     };
     writeSettings(nextSettings);
     store.settings = nextSettings;
