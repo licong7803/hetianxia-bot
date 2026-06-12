@@ -496,25 +496,38 @@ function isProductActive(product) {
 function normalizeTelegramLink(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  if (raw.startsWith('@')) return `https://t.me/${raw.slice(1)}`;
-  if (/^https:\/\/t\.me\/[A-Za-z0-9_]+$/i.test(raw)) return raw;
+  const tmeMatch = raw.match(/https?:\/\/t\.me\/([A-Za-z0-9_]{5,32})/i);
+  if (tmeMatch) return `https://t.me/${tmeMatch[1]}`;
+  const atMatch = raw.match(/@([A-Za-z0-9_]{5,32})/);
+  if (atMatch) return `https://t.me/${atMatch[1]}`;
   if (/^[A-Za-z0-9_]{5,32}$/.test(raw)) return `https://t.me/${raw}`;
   return raw;
 }
 
 function supportReplyMarkup(settings) {
-  if (!settings.supportTelegram) return undefined;
+  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  if (!supportTelegram) return undefined;
   return {
     inline_keyboard: [[
-      { text: '联系人工客服', url: settings.supportTelegram }
+      { text: '打开 Telegram 客服', url: supportTelegram }
     ]]
   };
 }
 
+function supportMessage(settings) {
+  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  if (supportTelegram) {
+    return settings.supportText || '请点击下方按钮联系人工客服。';
+  }
+
+  return '请先在后台“系统设置 -> 客服 Telegram”填写你的 Telegram 用户名，例如 @username。';
+}
+
 function productConfirmKeyboard(product, settings) {
   const rows = [[{ text: '确认下单', callback_data: `confirm_buy:${product.id}` }]];
-  if (settings.supportTelegram) {
-    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
+  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  if (supportTelegram) {
+    rows.push([{ text: '联系客服', url: supportTelegram }]);
   }
   return { inline_keyboard: rows };
 }
@@ -525,8 +538,9 @@ function productSummaryKeyboard(products, settings) {
     callback_data: `detail:${product.id}`
   }]));
 
-  if (settings.supportTelegram) {
-    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
+  const supportTelegram = normalizeTelegramLink(settings.supportTelegram || settings.supportText || '');
+  if (supportTelegram) {
+    rows.push([{ text: '联系客服', url: supportTelegram }]);
   }
 
   return { inline_keyboard: rows };
@@ -620,7 +634,7 @@ function startBot() {
     }
 
     if (msg.text === '联系客服') {
-      bot.sendMessage(msg.chat.id, store.settings.supportText || '请联系人工客服。', {
+      bot.sendMessage(msg.chat.id, supportMessage(store.settings), {
         reply_markup: supportReplyMarkup(store.settings)
       });
     }
@@ -636,7 +650,7 @@ function startBot() {
 
     const store = readStore();
     if (query.data === 'support') {
-      bot.sendMessage(chatId, store.settings.supportText || '请联系人工客服。', {
+      bot.sendMessage(chatId, supportMessage(store.settings), {
         reply_markup: supportReplyMarkup(store.settings)
       });
       bot.answerCallbackQuery(query.id);
