@@ -807,7 +807,7 @@
       try {
         const usdtQrData = await fileToDataUrl($('#settingUsdtQrData').files[0]);
         const wechatQrData = await fileToDataUrl($('#settingWechatQrData').files[0]);
-        await api('/api/settings', {
+        const savedSettings = await api('/api/settings', {
           method: 'PUT',
           body: JSON.stringify({
             storeName: $('#settingStoreName').value,
@@ -818,7 +818,7 @@
             wechatQrData
           })
         });
-        $('#settingsMessage').textContent = '已保存';
+        $('#settingsMessage').textContent = `已保存客服说明：${savedSettings.supportText || '空'}`;
         await loadAll();
       } catch (error) {
         $('#settingsMessage').textContent = error.message;

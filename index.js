@@ -387,9 +387,11 @@ async function handleApi(req, res, pathname) {
         supportTelegram: normalizeTelegramLink(body.supportTelegram || ''),
         usdtAddress: String(body.usdtAddress || ''),
         usdtQr: body.usdtQrData ? saveImageFromDataUrl(body.usdtQrData) : String(body.usdtQr || store.settings.usdtQr || ''),
-        wechatQr: body.wechatQrData ? saveImageFromDataUrl(body.wechatQrData) : String(body.wechatQr || store.settings.wechatQr || '')
+        wechatQr: body.wechatQrData ? saveImageFromDataUrl(body.wechatQrData) : String(body.wechatQr || store.settings.wechatQr || ''),
+        updatedAt: new Date().toISOString()
       };
       writeStore(store);
+      console.log(`系统设置已保存：客服说明="${store.settings.supportText}"，客服链接="${store.settings.supportTelegram}"`);
       jsonResponse(res, 200, store.settings);
       return;
     }
@@ -468,28 +470,37 @@ function rememberUser(msg) {
 }
 
 function rememberTelegramUser(telegramId, from) {
+  let rememberedUser;
+  updateStore((store) => {
+    let user = store.users.find((item) => item.telegramId === telegramId);
+    if (!user) {
+      user = {
+        telegramId,
+        username: from?.username || '',
+        firstName: from?.first_name || '',
+        lastName: from?.last_name || '',
+        banned: false,
+        purchaseHistory: [],
+        createdAt: new Date().toISOString(),
+        lastSeenAt: new Date().toISOString()
+      };
+      store.users.unshift(user);
+    } else {
+      user.username = from?.username || user.username;
+      user.firstName = from?.first_name || user.firstName;
+      user.lastName = from?.last_name || user.lastName;
+      user.lastSeenAt = new Date().toISOString();
+    }
+    rememberedUser = user;
+  });
+  return rememberedUser;
+}
+
+function updateStore(mutator) {
   const store = readStore();
-  let user = store.users.find((item) => item.telegramId === telegramId);
-  if (!user) {
-    user = {
-      telegramId,
-      username: from?.username || '',
-      firstName: from?.first_name || '',
-      lastName: from?.last_name || '',
-      banned: false,
-      purchaseHistory: [],
-      createdAt: new Date().toISOString(),
-      lastSeenAt: new Date().toISOString()
-    };
-    store.users.unshift(user);
-  } else {
-    user.username = from?.username || user.username;
-    user.firstName = from?.first_name || user.firstName;
-    user.lastName = from?.last_name || user.lastName;
-    user.lastSeenAt = new Date().toISOString();
-  }
+  mutator(store);
   writeStore(store);
-  return user;
+  return store;
 }
 
 function isUserBanned(telegramId) {
@@ -672,6 +683,7 @@ function startBot() {
     }
 
     if (msg.text === '联系客服') {
+      console.log(`联系客服请求：客服说明="${store.settings.supportText || ''}"，客服链接="${getSupportTelegram(store.settings)}"`);
       bot.sendMessage(msg.chat.id, supportMessage(store.settings), {
         reply_markup: supportReplyMarkup(store.settings)
       });
@@ -702,6 +714,7 @@ function startBot() {
     }
 
     if (query.data === 'support') {
+      console.log(`联系客服请求：客服说明="${store.settings.supportText || ''}"，客服链接="${getSupportTelegram(store.settings)}"`);
       bot.sendMessage(chatId, supportMessage(store.settings), {
         reply_markup: supportReplyMarkup(store.settings)
       });
