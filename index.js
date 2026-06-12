@@ -497,7 +497,15 @@ function supportReplyMarkup(settings) {
 }
 
 function productBuyKeyboard(product, settings) {
-  const rows = [[{ text: '立即下单', callback_data: `buy:${product.id}` }]];
+  const rows = [[{ text: '立即下单', callback_data: `detail:${product.id}` }]];
+  if (settings.supportTelegram) {
+    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
+  }
+  return { inline_keyboard: rows };
+}
+
+function productConfirmKeyboard(product, settings) {
+  const rows = [[{ text: '确认下单', callback_data: `confirm_buy:${product.id}` }]];
   if (settings.supportTelegram) {
     rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
   }
@@ -511,8 +519,7 @@ async function sendProductCards(bot, chatId, products, settings) {
     const lines = [
       `商品：${product.name}`,
       `价格：${product.price} USDT`,
-      `库存：${product.stock}`,
-      product.description ? `介绍：${product.description}` : ''
+      `库存：${product.stock}`
     ].filter(Boolean);
 
     const options = { reply_markup: productBuyKeyboard(product, settings) };
@@ -579,7 +586,7 @@ function startBot() {
     });
   });
 
-  bot.on('message', (msg) => {
+  bot.on('message', async (msg) => {
     rememberUser(msg);
     if (isUserBanned(msg.chat.id)) {
       bot.sendMessage(msg.chat.id, '你的账号暂时无法使用本机器人。');
@@ -601,7 +608,7 @@ function startBot() {
         bot.sendMessage(msg.chat.id, '当前暂无可售商品，请稍后再来。');
         return;
       }
-      sendProductCards(bot, msg.chat.id, products, store.settings);
+      await sendProductCards(bot, msg.chat.id, products, store.settings);
       return;
     }
 
@@ -629,10 +636,50 @@ function startBot() {
       return;
     }
 
-    if (query.data.startsWith('buy:')) {
-      const productId = query.data.slice(4);
+    if (query.data.startsWith('detail:')) {
+      const productId = query.data.slice('detail:'.length);
       const product = store.products.find((item) => item.id === productId);
-      if (!product || !product.active || product.stock <= 0) {
+      if (!product || !isProductActive(product)) {
+        bot.answerCallbackQuery(query.id, { text: '商品已下架。' });
+        return;
+      }
+
+      const detailLines = [
+        `商品：${product.name}`,
+        `价格：${product.price} USDT`,
+        `库存：${product.stock}`,
+        '',
+        product.description ? `商品介绍：\n${product.description}` : '商品介绍：暂无'
+      ].filter(Boolean);
+
+      if (product.imageUrl) {
+        try {
+          await bot.sendPhoto(chatId, getUploadedFilePath(product.imageUrl), {
+            caption: detailLines.join('\n'),
+            reply_markup: productConfirmKeyboard(product, store.settings)
+          });
+        } catch (error) {
+          console.error(`发送商品介绍图片失败：${error.message}`);
+          await bot.sendMessage(chatId, detailLines.join('\n'), {
+            reply_markup: productConfirmKeyboard(product, store.settings)
+          });
+        }
+      } else {
+        await bot.sendMessage(chatId, detailLines.join('\n'), {
+          reply_markup: productConfirmKeyboard(product, store.settings)
+        });
+      }
+
+      bot.answerCallbackQuery(query.id);
+      return;
+    }
+
+    if (query.data.startsWith('confirm_buy:') || query.data.startsWith('buy:')) {
+      const productId = query.data.startsWith('confirm_buy:')
+        ? query.data.slice('confirm_buy:'.length)
+        : query.data.slice('buy:'.length);
+      const product = store.products.find((item) => item.id === productId);
+      if (!product || !isProductActive(product) || product.stock <= 0) {
         bot.answerCallbackQuery(query.id, { text: '商品已下架或库存不足。' });
         return;
       }
