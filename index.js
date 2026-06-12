@@ -502,9 +502,9 @@ function isProductActive(product) {
 }
 
 function normalizeTelegramLink(value) {
-  const raw = String(value || '').trim();
+  const raw = String(value || '').trim().replace(/^＠/, '@');
   if (!raw) return '';
-  const tmeMatch = raw.match(/https?:\/\/t\.me\/([A-Za-z0-9_]{5,32})/i);
+  const tmeMatch = raw.match(/^(?:https?:\/\/)?(?:t\.me|telegram\.me)\/([A-Za-z0-9_]{5,32})(?:[/?#].*)?$/i);
   if (tmeMatch) return `https://t.me/${tmeMatch[1]}`;
   const atMatch = raw.match(/@([A-Za-z0-9_]{5,32})/);
   if (atMatch) return `https://t.me/${atMatch[1]}`;
@@ -513,7 +513,7 @@ function normalizeTelegramLink(value) {
 }
 
 function getSupportTelegram(settings) {
-  return normalizeTelegramLink(settings.supportTelegram || '') || normalizeTelegramLink(settings.supportText || '');
+  return normalizeTelegramLink(settings.supportTelegram || '') || normalizeTelegramLink(settings.supportText || '') || normalizeTelegramLink(process.env.SUPPORT_TELEGRAM || '');
 }
 
 function supportReplyMarkup(settings) {
@@ -530,6 +530,10 @@ function supportMessage(settings) {
   const supportTelegram = getSupportTelegram(settings);
   if (supportTelegram) {
     return settings.supportText || '请点击下方按钮联系人工客服。';
+  }
+
+  if (settings.supportTelegram) {
+    return '客服 Telegram 格式不正确。请在后台填写 @username 或 https://t.me/username。注意：必须是 Telegram 用户名，不是昵称。';
   }
 
   return '请先在后台“系统设置 -> 客服 Telegram”填写你的 Telegram 用户名，例如 @username。';
