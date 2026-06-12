@@ -159,6 +159,10 @@ function saveImageFromDataUrl(dataUrl) {
   return `/uploads/${filename}`;
 }
 
+function getUploadedFilePath(imageUrl) {
+  return path.join(UPLOADS_DIR, path.basename(imageUrl || ''));
+}
+
 function getRequestPath(req) {
   return new URL(req.url, `http://${req.headers.host}`).pathname;
 }
@@ -314,7 +318,7 @@ async function handleApi(req, res, pathname) {
       for (const user of store.users.filter((item) => !item.banned)) {
         try {
           if (imageUrl) {
-            await bot.sendPhoto(user.telegramId, path.join(ROOT_DIR, imageUrl.replace(/^\//, '')), { caption: body.text || '' });
+            await bot.sendPhoto(user.telegramId, getUploadedFilePath(imageUrl), { caption: body.text || '' });
           } else {
             await bot.sendMessage(user.telegramId, body.text || '');
           }
@@ -546,7 +550,7 @@ function startBot() {
     }
   });
 
-  bot.on('callback_query', (query) => {
+  bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     rememberTelegramUser(chatId, query.from || {});
     if (isUserBanned(chatId)) {
@@ -595,16 +599,28 @@ function startBot() {
         `价格：${product.price} USDT`,
         '',
         store.settings.usdtAddress ? `USDT 地址：${store.settings.usdtAddress}` : 'USDT 地址：请联系人工客服获取。',
-        store.settings.wechatQr ? '微信收款码请在后台系统设置中维护，暂由客服发送。' : '',
         '',
-        '付款后请把付款截图发给客服，后台可手动把订单改为待发货、已发货或已完成。'
+        '付款后请把付款截图发给客服'
       ].filter(Boolean);
 
+      if (product.imageUrl) {
+        try {
+          await bot.sendPhoto(chatId, getUploadedFilePath(product.imageUrl), {
+            caption: `商品：${product.name}`
+          });
+        } catch (error) {
+          console.error(`发送商品图片失败：${error.message}`);
+        }
+      }
       bot.sendMessage(chatId, payLines.join('\n'));
       if (store.settings.wechatQr) {
-        bot.sendPhoto(chatId, path.join(ROOT_DIR, store.settings.wechatQr.replace(/^\//, '')), {
-          caption: '微信收款码'
-        });
+        try {
+          await bot.sendPhoto(chatId, getUploadedFilePath(store.settings.wechatQr), {
+            caption: '微信收款码'
+          });
+        } catch (error) {
+          console.error(`发送微信收款码失败：${error.message}`);
+        }
       }
       bot.answerCallbackQuery(query.id, { text: '订单已创建' });
     }
