@@ -21,6 +21,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-this-secret';
 const TELEGRAM_PROXY = getTelegramProxy();
+const DEFAULT_SUPPORT_TELEGRAM = process.env.SUPPORT_TELEGRAM || '@hetianxia_china';
 const sessions = new Map();
 
 let bot = null;
@@ -513,7 +514,7 @@ function normalizeTelegramLink(value) {
 }
 
 function getSupportTelegram(settings) {
-  return normalizeTelegramLink(settings.supportTelegram || '') || normalizeTelegramLink(settings.supportText || '') || normalizeTelegramLink(process.env.SUPPORT_TELEGRAM || '');
+  return normalizeTelegramLink(settings.supportTelegram || '') || normalizeTelegramLink(settings.supportText || '') || normalizeTelegramLink(DEFAULT_SUPPORT_TELEGRAM);
 }
 
 function supportReplyMarkup(settings) {
