@@ -58,6 +58,7 @@ function ensureFolders() {
       settings: {
         storeName: '盒天下',
         supportText: '请联系人工客服完成付款和发货。',
+        supportTelegram: '',
         usdtAddress: '',
         wechatQr: ''
       }
@@ -360,6 +361,7 @@ async function handleApi(req, res, pathname) {
       store.settings = {
         storeName: String(body.storeName || '盒天下'),
         supportText: String(body.supportText || ''),
+        supportTelegram: normalizeTelegramLink(body.supportTelegram || ''),
         usdtAddress: String(body.usdtAddress || ''),
         wechatQr: body.wechatQrData ? saveImageFromDataUrl(body.wechatQrData) : String(body.wechatQr || store.settings.wechatQr || '')
       };
@@ -472,13 +474,62 @@ function isUserBanned(telegramId) {
   return Boolean(user?.banned);
 }
 
-function productKeyboard(products) {
-  const rows = products.map((product) => ([{
-    text: `${product.name} - ${product.price} USDT`,
-    callback_data: `buy:${product.id}`
-  }]));
-  rows.push([{ text: '联系客服', callback_data: 'support' }]);
+function isProductActive(product) {
+  return product.active === true || product.active === 'true' || product.active === 1 || product.active === '1';
+}
+
+function normalizeTelegramLink(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('@')) return `https://t.me/${raw.slice(1)}`;
+  if (/^https:\/\/t\.me\/[A-Za-z0-9_]+$/i.test(raw)) return raw;
+  if (/^[A-Za-z0-9_]{5,32}$/.test(raw)) return `https://t.me/${raw}`;
+  return raw;
+}
+
+function supportReplyMarkup(settings) {
+  if (!settings.supportTelegram) return undefined;
+  return {
+    inline_keyboard: [[
+      { text: '联系人工客服', url: settings.supportTelegram }
+    ]]
+  };
+}
+
+function productBuyKeyboard(product, settings) {
+  const rows = [[{ text: '立即下单', callback_data: `buy:${product.id}` }]];
+  if (settings.supportTelegram) {
+    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
+  }
   return { inline_keyboard: rows };
+}
+
+async function sendProductCards(bot, chatId, products, settings) {
+  await bot.sendMessage(chatId, `请选择商品（共 ${products.length} 个）：`);
+
+  for (const product of products) {
+    const lines = [
+      `商品：${product.name}`,
+      `价格：${product.price} USDT`,
+      `库存：${product.stock}`,
+      product.description ? `介绍：${product.description}` : ''
+    ].filter(Boolean);
+
+    const options = { reply_markup: productBuyKeyboard(product, settings) };
+    if (product.imageUrl) {
+      try {
+        await bot.sendPhoto(chatId, getUploadedFilePath(product.imageUrl), {
+          caption: lines.join('\n'),
+          ...options
+        });
+        continue;
+      } catch (error) {
+        console.error(`发送商品卡片图片失败：${error.message}`);
+      }
+    }
+
+    await bot.sendMessage(chatId, lines.join('\n'), options);
+  }
 }
 
 function startBot() {
@@ -544,18 +595,20 @@ function startBot() {
 
     const store = readStore();
     if (msg.text === '商品购买' || msg.text === '今日价格') {
-      const products = store.products.filter((item) => item.active);
-      console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter((item) => item.active).length} 个，展示 ${products.length} 个。`);
+      const products = store.products.filter(isProductActive);
+      console.log(`商品列表请求：总商品 ${store.products.length} 个，上架 ${store.products.filter(isProductActive).length} 个，展示 ${products.length} 个。`);
       if (products.length === 0) {
         bot.sendMessage(msg.chat.id, '当前暂无可售商品，请稍后再来。');
         return;
       }
-      bot.sendMessage(msg.chat.id, '请选择商品：', { reply_markup: productKeyboard(products) });
+      sendProductCards(bot, msg.chat.id, products, store.settings);
       return;
     }
 
     if (msg.text === '联系客服') {
-      bot.sendMessage(msg.chat.id, store.settings.supportText || '请联系人工客服。');
+      bot.sendMessage(msg.chat.id, store.settings.supportText || '请联系人工客服。', {
+        reply_markup: supportReplyMarkup(store.settings)
+      });
     }
   });
 
@@ -569,7 +622,9 @@ function startBot() {
 
     const store = readStore();
     if (query.data === 'support') {
-      bot.sendMessage(chatId, store.settings.supportText || '请联系人工客服。');
+      bot.sendMessage(chatId, store.settings.supportText || '请联系人工客服。', {
+        reply_markup: supportReplyMarkup(store.settings)
+      });
       bot.answerCallbackQuery(query.id);
       return;
     }

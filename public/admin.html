@@ -477,6 +477,9 @@
                 <label>USDT 收款地址
                   <input id="settingUsdtAddress">
                 </label>
+                <label>客服 Telegram
+                  <input id="settingSupportTelegram" placeholder="@username 或 https://t.me/username">
+                </label>
                 <label class="full">客服说明
                   <textarea id="settingSupportText"></textarea>
                 </label>
@@ -656,6 +659,7 @@
       $('#settingStoreName').value = settings.storeName || '';
       $('#settingUsdtAddress').value = settings.usdtAddress || '';
       $('#settingSupportText').value = settings.supportText || '';
+      $('#settingSupportTelegram').value = settings.supportTelegram || '';
     }
 
     function resetProductForm() {
@@ -805,6 +809,7 @@
             storeName: $('#settingStoreName').value,
             usdtAddress: $('#settingUsdtAddress').value,
             supportText: $('#settingSupportText').value,
+            supportTelegram: $('#settingSupportTelegram').value,
             wechatQrData
           })
         });
