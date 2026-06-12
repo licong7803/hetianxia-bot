@@ -25,6 +25,14 @@ const sessions = new Map();
 
 let bot = null;
 
+process.on('uncaughtException', (error) => {
+  console.error('未捕获异常：', error);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('未处理 Promise 错误：', error);
+});
+
 function resolveDataPaths() {
   const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_NAME);
   const defaultDataDir = isRailway ? '/data/data' : path.join(ROOT_DIR, 'data');
@@ -589,7 +597,7 @@ function startBot() {
   createLockFile();
 
   process.on('exit', () => {
-    if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE);
+    if (!isRailwayRuntime() && fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE);
   });
   process.on('SIGINT', () => process.exit(0));
   process.on('SIGTERM', () => process.exit(0));
@@ -841,6 +849,11 @@ async function savePaymentScreenshot(msg) {
 }
 
 function createLockFile() {
+  if (isRailwayRuntime()) {
+    console.log('Railway 环境已跳过本地锁文件检查。');
+    return;
+  }
+
   if (fs.existsSync(LOCK_FILE)) {
     const oldPid = Number(fs.readFileSync(LOCK_FILE, 'utf8'));
     if (oldPid) {
@@ -861,8 +874,16 @@ function createLockFile() {
   fs.closeSync(fd);
 }
 
+function isRailwayRuntime() {
+  return Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_NAME);
+}
+
 const server = http.createServer(handleWeb);
 server.listen(PORT, () => {
   console.log(`后台管理系统已启动：http://localhost:${PORT}/admin`);
-  startBot();
+  try {
+    startBot();
+  } catch (error) {
+    console.error('机器人启动失败：', error);
+  }
 });
