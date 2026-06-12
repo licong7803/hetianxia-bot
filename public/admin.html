@@ -818,7 +818,7 @@
             wechatQrData
           })
         });
-        $('#settingsMessage').textContent = `已保存客服说明：${savedSettings.supportText || '空'}`;
+        $('#settingsMessage').textContent = `已保存；USDT收款码：${savedSettings.usdtQr ? '已设置' : '未设置'}；微信收款码：${savedSettings.wechatQr ? '已设置' : '未设置'}`;
         await loadAll();
       } catch (error) {
         $('#settingsMessage').textContent = error.message;
