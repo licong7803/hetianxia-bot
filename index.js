@@ -617,23 +617,11 @@ function startBot() {
       return;
     }
 
-    bot.sendMessage(msg.chat.id, '欢迎使用盒天下！请选择功能：', {
-      reply_markup: {
-        keyboard: [
-          ['商品购买'],
-          ['联系客服']
-        ],
-        resize_keyboard: true
-      }
-    });
-  });
-
-  bot.onText(/\/start/, (msg) => {
     const store = readStore();
-    bot.sendMessage(msg.chat.id, '请选择功能：', {
+    bot.sendMessage(msg.chat.id, '欢迎使用盒天下！请选择功能：', {
       reply_markup: mainMenuReplyMarkup(store.settings)
     }).catch((error) => {
-      console.error(`/start 内联菜单发送失败：${error.message}`);
+      console.error(`/start 菜单发送失败：${error.message}`);
     });
   });
 
