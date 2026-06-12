@@ -21,7 +21,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN || '';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const SESSION_SECRET = process.env.SESSION_SECRET || 'change-this-secret';
-const TELEGRAM_PROXY = process.env.TELEGRAM_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+const TELEGRAM_PROXY = getTelegramProxy();
 const sessions = new Map();
 
 let bot = null;
@@ -374,6 +374,25 @@ function normalizeProduct(input) {
     updatedAt: new Date().toISOString(),
     createdAt: input.createdAt || new Date().toISOString()
   };
+}
+
+function getTelegramProxy() {
+  const proxy = process.env.TELEGRAM_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || '';
+  const isRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_SERVICE_NAME);
+  const isLocalProxy = /\/\/(127\.0\.0\.1|localhost)(:|\/|$)/i.test(proxy);
+  const isValidProxyUrl = /^(https?|socks4?|socks5):\/\//i.test(proxy);
+
+  if (proxy && !isValidProxyUrl) {
+    console.log('检测到 TELEGRAM_PROXY/HTTP_PROXY/HTTPS_PROXY 不是有效代理地址，已忽略。代理地址必须以 http://、https:// 或 socks:// 开头。');
+    return '';
+  }
+
+  if (isRailway && isLocalProxy) {
+    console.log('检测到 Railway 上配置了本地代理地址，已忽略 TELEGRAM_PROXY。Railway 通常不需要 Telegram 代理。');
+    return '';
+  }
+
+  return proxy;
 }
 
 function handleWeb(req, res) {
