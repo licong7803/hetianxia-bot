@@ -1,0 +1,51 @@
+{
+  "products": [
+    {
+      "id": "product_1781236607421_8c078569",
+      "name": "手机定位",
+      "description": "三网手机号基站定位，精准度十米范围内",
+      "price": 300,
+      "stock": 49,
+      "active": true,
+      "imageUrl": "",
+      "updatedAt": "2026-06-12T03:56:47.421Z",
+      "createdAt": "2026-06-12T03:56:47.421Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "order_1781236670512_9089025a",
+      "productId": "product_1781236607421_8c078569",
+      "productName": "手机定位",
+      "price": 300,
+      "telegramId": 6606243827,
+      "username": "",
+      "status": "待付款",
+      "paymentImageUrl": "",
+      "note": "",
+      "createdAt": "2026-06-12T03:57:50.512Z",
+      "updatedAt": "2026-06-12T03:57:50.512Z"
+    }
+  ],
+  "users": [
+    {
+      "telegramId": 6606243827,
+      "username": "",
+      "firstName": "孙大炮",
+      "lastName": "",
+      "banned": false,
+      "purchaseHistory": [
+        "order_1781236670512_9089025a"
+      ],
+      "createdAt": "2026-06-12T03:53:15.696Z",
+      "lastSeenAt": "2026-06-12T03:57:50.509Z"
+    }
+  ],
+  "broadcasts": [],
+  "settings": {
+    "storeName": "盒天下",
+    "supportText": "请联系人工客服完成付款和发货。",
+    "usdtAddress": "",
+    "wechatQr": ""
+  }
+}

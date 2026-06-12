@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>盒天下后台管理系统</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #18202f;
+      --muted: #657085;
+      --line: #dde3ee;
+      --primary: #1668dc;
+      --primary-dark: #0d4fae;
+      --danger: #c93535;
+      --ok: #1a7f4b;
+      --shadow: 0 8px 24px rgba(24, 32, 47, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 9px 13px;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--primary-dark); }
+    button.secondary { background: #e8eef8; color: var(--text); }
+    button.secondary:hover { background: #dce6f5; }
+    button.danger { background: var(--danger); }
+    button.danger:hover { background: #a92727; }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: #f8fafd;
+    }
+
+    .login {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .login-box {
+      width: min(420px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .login-box h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+    }
+
+    .sidebar {
+      background: #121826;
+      color: #fff;
+      padding: 22px 16px;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 22px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      color: #d9e2f2;
+      padding: 11px 12px;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: #22304a;
+      color: #fff;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 64px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .content {
+      padding: 24px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .section {
+      display: none;
+      gap: 16px;
+    }
+
+    .section.active { display: grid; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .panel-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 28px;
+      margin-top: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #edf2f9;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .status.ok {
+      background: #e5f6ed;
+      color: var(--ok);
+    }
+
+    .thumb {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #f1f4f8;
+    }
+
+    .message {
+      color: var(--danger);
+      min-height: 20px;
+      font-size: 14px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+
+      .nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginView" class="login">
+    <form id="loginForm" class="login-box">
+      <h1>盒天下后台登录</h1>
+      <label>账号
+        <input id="loginUsername" autocomplete="username" required>
+      </label>
+      <label>密码
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">登录</button>
+      <div id="loginMessage" class="message"></div>
+    </form>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">盒天下后台</div>
+      <nav class="nav">
+        <button data-section="dashboard" class="active">仪表盘</button>
+        <button data-section="products">商品管理</button>
+        <button data-section="orders">订单管理</button>
+        <button data-section="users">用户管理</button>
+        <button data-section="broadcasts">广播消息</button>
+        <button data-section="settings">系统设置</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <strong id="pageTitle">仪表盘</strong>
+        <button id="logoutBtn" class="secondary">退出登录</button>
+      </header>
+
+      <div class="content">
+        <section id="dashboard" class="section active">
+          <div class="grid">
+            <div class="metric">商品总数<strong id="metricProducts">0</strong></div>
+            <div class="metric">上架商品<strong id="metricActiveProducts">0</strong></div>
+            <div class="metric">订单总数<strong id="metricOrders">0</strong></div>
+            <div class="metric">用户总数<strong id="metricUsers">0</strong></div>
+          </div>
+        </section>
+
+        <section id="products" class="section">
+          <div class="panel">
+            <div class="panel-head">
+              <h2 id="productFormTitle">新增商品</h2>
+              <button id="resetProductForm" class="secondary">清空表单</button>
+            </div>
+            <form id="productForm" class="panel-body">
+              <input id="productId" type="hidden">
+              <div class="form-grid">
+                <label>商品名称
+                  <input id="productName" required>
+                </label>
+                <label>价格（USDT）
+                  <input id="productPrice" type="number" min="0" step="0.01" required>
+                </label>
+                <label>库存
+                  <input id="productStock" type="number" min="0" step="1" required>
+                </label>
+                <label>上下架
+                  <select id="productActive">
+                    <option value="true">上架</option>
+                    <option value="false">下架</option>
+                  </select>
+                </label>
+                <label class="full">商品介绍
+                  <textarea id="productDescription"></textarea>
+                </label>
+                <label class="full">商品图片
+                  <input id="productImage" type="file" accept="image/*">
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit">保存商品</button>
+                <span id="productMessage" class="message"></span>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head"><h2>商品列表</h2></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>图片</th>
+                    <th>名称</th>
+                    <th>价格</th>
+                    <th>库存</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="orders" class="section">
+          <div class="panel">
+            <div class="panel-head"><h2>订单列表</h2></div>
+            <table>
+              <thead>
+                <tr>
+                  <th>订单号</th>
+                  <th>商品</th>
+                  <th>用户</th>
+                  <th>金额</th>
+                  <th>付款截图</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="users" class="section">
+          <div class="panel">
+            <div class="panel-head"><h2>用户列表</h2></div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Telegram ID</th>
+                  <th>用户名</th>
+                  <th>购买记录</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="broadcasts" class="section">
+          <div class="panel">
+            <div class="panel-head"><h2>发送广播</h2></div>
+            <form id="broadcastForm" class="panel-body">
+              <label>广播文字
+                <textarea id="broadcastText" required></textarea>
+              </label>
+              <label>广播图片
+                <input id="broadcastImage" type="file" accept="image/*">
+              </label>
+              <div class="actions">
+                <button type="submit">发送给所有未封禁用户</button>
+                <span id="broadcastMessage" class="message"></span>
+              </div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>广播记录</h2></div>
+            <table>
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>内容</th>
+                  <th>成功</th>
+                  <th>失败</th>
+                </tr>
+              </thead>
+              <tbody id="broadcastsTable"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="settings" class="section">
+          <div class="panel">
+            <div class="panel-head"><h2>系统设置</h2></div>
+            <form id="settingsForm" class="panel-body">
+              <div class="form-grid">
+                <label>店铺名称
+                  <input id="settingStoreName">
+                </label>
+                <label>USDT 收款地址
+                  <input id="settingUsdtAddress">
+                </label>
+                <label class="full">客服说明
+                  <textarea id="settingSupportText"></textarea>
+                </label>
+                <label class="full">微信收款码
+                  <input id="settingWechatQrData" type="file" accept="image/*">
+                </label>
+              </div>
+              <div class="actions">
+                <button type="submit">保存设置</button>
+                <span id="settingsMessage" class="message"></span>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      products: [],
+      orders: [],
+      users: []
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    async function api(path, options = {}) {
+      try {
+        const response = await fetch(path, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || '请求失败');
+        return data;
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw new Error('后台服务未连接，请确认终端正在运行 npm.cmd start');
+        }
+        throw error;
+      }
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve('');
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      return new Date(value).toLocaleString('zh-CN');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[char]));
+    }
+
+    function showApp() {
+      $('#loginView').classList.add('hidden');
+      $('#appView').classList.remove('hidden');
+    }
+
+    function showLogin() {
+      $('#loginView').classList.remove('hidden');
+      $('#appView').classList.add('hidden');
+    }
+
+    async function loadAll() {
+      const [dashboard, products, orders, users, broadcasts, settings] = await Promise.all([
+        api('/api/dashboard'),
+        api('/api/products'),
+        api('/api/orders'),
+        api('/api/users'),
+        api('/api/broadcasts'),
+        api('/api/settings')
+      ]);
+
+      state.products = products;
+      state.orders = orders;
+      state.users = users;
+
+      $('#metricProducts').textContent = dashboard.productCount;
+      $('#metricActiveProducts').textContent = dashboard.activeProductCount;
+      $('#metricOrders').textContent = dashboard.orderCount;
+      $('#metricUsers').textContent = dashboard.userCount;
+
+      renderProducts(products);
+      renderOrders(orders);
+      renderUsers(users);
+      renderBroadcasts(broadcasts);
+      renderSettings(settings);
+    }
+
+    function renderProducts(products) {
+      $('#productsTable').innerHTML = products.map((product) => `
+        <tr>
+          <td>${product.imageUrl ? `<img class="thumb" src="${product.imageUrl}" alt="">` : ''}</td>
+          <td>
+            <strong>${escapeHtml(product.name)}</strong><br>
+            <small>${escapeHtml(product.description)}</small>
+          </td>
+          <td>${product.price} USDT</td>
+          <td>${product.stock}</td>
+          <td><span class="status ${product.active ? 'ok' : ''}">${product.active ? '上架' : '下架'}</span></td>
+          <td>
+            <div class="actions">
+              <button class="secondary" onclick="editProduct('${product.id}')">编辑</button>
+              <button class="danger" onclick="deleteProduct('${product.id}')">删除</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderOrders(orders) {
+      $('#ordersTable').innerHTML = orders.map((order) => `
+        <tr>
+          <td>${escapeHtml(order.id)}<br><small>${formatDate(order.createdAt)}</small></td>
+          <td>${escapeHtml(order.productName)}</td>
+          <td>${escapeHtml(order.username || '')}<br><small>${order.telegramId}</small></td>
+          <td>${order.price} USDT</td>
+          <td>${order.paymentImageUrl ? `<a href="${order.paymentImageUrl}" target="_blank">查看截图</a>` : '暂无'}</td>
+          <td>
+            <select data-order-status="${order.id}">
+              ${['待付款', '待发货', '已发货', '已完成'].map((status) => `
+                <option value="${status}" ${order.status === status ? 'selected' : ''}>${status}</option>
+              `).join('')}
+            </select>
+          </td>
+          <td><button onclick="saveOrder('${order.id}')">保存</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderUsers(users) {
+      $('#usersTable').innerHTML = users.map((user) => `
+        <tr>
+          <td>${user.telegramId}</td>
+          <td>@${escapeHtml(user.username || '')}<br>${escapeHtml([user.firstName, user.lastName].filter(Boolean).join(' '))}</td>
+          <td>${(user.purchaseHistory || []).length} 单</td>
+          <td><span class="status ${user.banned ? '' : 'ok'}">${user.banned ? '已封禁' : '正常'}</span></td>
+          <td>
+            <div class="actions">
+              <button class="secondary" onclick="toggleBan('${user.telegramId}', ${!user.banned})">${user.banned ? '解封' : '封禁'}</button>
+              <button onclick="sendUserMessage('${user.telegramId}')">发消息</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderBroadcasts(broadcasts) {
+      $('#broadcastsTable').innerHTML = broadcasts.map((item) => `
+        <tr>
+          <td>${formatDate(item.createdAt)}</td>
+          <td>${item.imageUrl ? `<img class="thumb" src="${item.imageUrl}" alt=""><br>` : ''}${escapeHtml(item.text)}</td>
+          <td>${item.successCount}</td>
+          <td>${item.failCount}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderSettings(settings) {
+      $('#settingStoreName').value = settings.storeName || '';
+      $('#settingUsdtAddress').value = settings.usdtAddress || '';
+      $('#settingSupportText').value = settings.supportText || '';
+    }
+
+    function resetProductForm() {
+      $('#productId').value = '';
+      $('#productFormTitle').textContent = '新增商品';
+      $('#productForm').reset();
+      $('#productActive').value = 'true';
+    }
+
+    window.editProduct = (id) => {
+      const product = state.products.find((item) => item.id === id);
+      if (!product) return;
+      $('#productFormTitle').textContent = '编辑商品';
+      $('#productId').value = product.id;
+      $('#productName').value = product.name;
+      $('#productPrice').value = product.price;
+      $('#productStock').value = product.stock;
+      $('#productActive').value = String(product.active);
+      $('#productDescription').value = product.description || '';
+      $('#productImage').value = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.deleteProduct = async (id) => {
+      if (!confirm('确定删除这个商品吗？')) return;
+      await api(`/api/products/${id}`, { method: 'DELETE' });
+      await loadAll();
+    };
+
+    window.saveOrder = async (id) => {
+      const status = document.querySelector(`[data-order-status="${id}"]`).value;
+      await api(`/api/orders/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      });
+      await loadAll();
+    };
+
+    window.toggleBan = async (telegramId, banned) => {
+      await api(`/api/users/${telegramId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ banned })
+      });
+      await loadAll();
+    };
+
+    window.sendUserMessage = async (telegramId) => {
+      const text = prompt('请输入要发送给该用户的消息：');
+      if (!text) return;
+      await api(`/api/users/${telegramId}/message`, {
+        method: 'POST',
+        body: JSON.stringify({ text })
+      });
+      alert('已发送');
+    };
+
+    $('#loginForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('#loginMessage').textContent = '';
+      try {
+        await api('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            username: $('#loginUsername').value,
+            password: $('#loginPassword').value
+          })
+        });
+        showApp();
+        await loadAll();
+      } catch (error) {
+        $('#loginMessage').textContent = error.message;
+      }
+    });
+
+    $('#logoutBtn').addEventListener('click', async () => {
+      await api('/api/logout', { method: 'POST', body: '{}' });
+      showLogin();
+    });
+
+    $$('.nav button').forEach((button) => {
+      button.addEventListener('click', () => {
+        $$('.nav button').forEach((item) => item.classList.remove('active'));
+        $$('.section').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        $(`#${button.dataset.section}`).classList.add('active');
+        $('#pageTitle').textContent = button.textContent;
+      });
+    });
+
+    $('#resetProductForm').addEventListener('click', resetProductForm);
+
+    $('#productForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('#productMessage').textContent = '';
+      const id = $('#productId').value;
+      const imageData = await fileToDataUrl($('#productImage').files[0]);
+      const body = {
+        name: $('#productName').value,
+        price: Number($('#productPrice').value),
+        stock: Number($('#productStock').value),
+        active: $('#productActive').value === 'true',
+        description: $('#productDescription').value,
+        imageData
+      };
+      try {
+        if (id) {
+          await api(`/api/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+        } else {
+          await api('/api/products', { method: 'POST', body: JSON.stringify(body) });
+        }
+        resetProductForm();
+        await loadAll();
+        $('#productMessage').textContent = '已保存';
+      } catch (error) {
+        $('#productMessage').textContent = error.message;
+      }
+    });
+
+    $('#broadcastForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('#broadcastMessage').textContent = '正在发送，请不要关闭页面...';
+      try {
+        const imageData = await fileToDataUrl($('#broadcastImage').files[0]);
+        await api('/api/broadcasts', {
+          method: 'POST',
+          body: JSON.stringify({
+            text: $('#broadcastText').value,
+            imageData
+          })
+        });
+        $('#broadcastForm').reset();
+        $('#broadcastMessage').textContent = '广播已发送';
+        await loadAll();
+      } catch (error) {
+        $('#broadcastMessage').textContent = error.message;
+      }
+    });
+
+    $('#settingsForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('#settingsMessage').textContent = '';
+      try {
+        const wechatQrData = await fileToDataUrl($('#settingWechatQrData').files[0]);
+        await api('/api/settings', {
+          method: 'PUT',
+          body: JSON.stringify({
+            storeName: $('#settingStoreName').value,
+            usdtAddress: $('#settingUsdtAddress').value,
+            supportText: $('#settingSupportText').value,
+            wechatQrData
+          })
+        });
+        $('#settingsMessage').textContent = '已保存';
+        await loadAll();
+      } catch (error) {
+        $('#settingsMessage').textContent = error.message;
+      }
+    });
+
+    (async function init() {
+      try {
+        await api('/api/me');
+        showApp();
+        await loadAll();
+      } catch (error) {
+        showLogin();
+      }
+    })();
+  </script>
+</body>
+</html>
