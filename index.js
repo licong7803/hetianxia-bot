@@ -498,14 +498,6 @@ function supportReplyMarkup(settings) {
   };
 }
 
-function productBuyKeyboard(product, settings) {
-  const rows = [[{ text: '立即下单', callback_data: `detail:${product.id}` }]];
-  if (settings.supportTelegram) {
-    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
-  }
-  return { inline_keyboard: rows };
-}
-
 function productConfirmKeyboard(product, settings) {
   const rows = [[{ text: '确认下单', callback_data: `confirm_buy:${product.id}` }]];
   if (settings.supportTelegram) {
@@ -514,31 +506,31 @@ function productConfirmKeyboard(product, settings) {
   return { inline_keyboard: rows };
 }
 
-async function sendProductCards(bot, chatId, products, settings) {
-  await bot.sendMessage(chatId, `请选择商品（共 ${products.length} 个）：`);
+function productSummaryKeyboard(products, settings) {
+  const rows = products.map((product, index) => ([{
+    text: `${index + 1}. ${product.name}`,
+    callback_data: `detail:${product.id}`
+  }]));
 
-  for (const product of products) {
-    const lines = [
-      `商品：${product.name}`,
-      `价格：${product.price} USDT`,
-      `库存：${product.stock}`
-    ].filter(Boolean);
-
-    const options = { reply_markup: productBuyKeyboard(product, settings) };
-    if (product.imageUrl) {
-      try {
-        await bot.sendPhoto(chatId, getUploadedFilePath(product.imageUrl), {
-          caption: lines.join('\n'),
-          ...options
-        });
-        continue;
-      } catch (error) {
-        console.error(`发送商品卡片图片失败：${error.message}`);
-      }
-    }
-
-    await bot.sendMessage(chatId, lines.join('\n'), options);
+  if (settings.supportTelegram) {
+    rows.push([{ text: '联系客服', url: settings.supportTelegram }]);
   }
+
+  return { inline_keyboard: rows };
+}
+
+async function sendProductSummary(bot, chatId, products, settings) {
+  const lines = [
+    `商品清单（共 ${products.length} 个）：`,
+    '',
+    ...products.map((product, index) => `${index + 1}. ${product.name} - ${product.price} USDT`),
+    '',
+    '点击下方商品按钮查看详情和图片。'
+  ];
+
+  await bot.sendMessage(chatId, lines.join('\n'), {
+    reply_markup: productSummaryKeyboard(products, settings)
+  });
 }
 
 function startBot() {
@@ -610,7 +602,7 @@ function startBot() {
         bot.sendMessage(msg.chat.id, '当前暂无可售商品，请稍后再来。');
         return;
       }
-      await sendProductCards(bot, msg.chat.id, products, store.settings);
+      await sendProductSummary(bot, msg.chat.id, products, store.settings);
       return;
     }
 
