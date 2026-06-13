@@ -143,7 +143,7 @@ function productSummaryKeyboard(products) {
   return {
     inline_keyboard: products.map((product, index) => [
       {
-        text: `${index + 1}. ${product.name}`,
+        text: `${index + 1}. ${product.name} - ${product.price} USDT`,
         callback_data: `detail:${product.id}`,
       },
     ]),
@@ -210,11 +210,7 @@ async function sendProductSummary(chatId) {
     return;
   }
 
-  const lines = ['商品清单：', ...products.map((product, index) => {
-    return `${index + 1}. ${product.name} - ${product.price} USDT`;
-  })];
-
-  await botInstance.sendMessage(chatId, lines.join('\n'), {
+  await botInstance.sendMessage(chatId, '请选择商品：', {
     reply_markup: productSummaryKeyboard(products),
   });
 }
